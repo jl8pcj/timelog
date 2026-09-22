@@ -8,9 +8,9 @@
         body { font-family: sans-serif; margin: 0; padding: 10px; background: #f4f4f9; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
         h2 { margin: 5px 0; font-size: 1.2rem; text-align: center; }
         
-        /* タブメニュー */
+        /* タブメニュー（文字が多くなっても折り返して見やすく） */
         .tab-container { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; justify-content: center; }
-        .tab-btn { padding: 6px 10px; font-size: 0.85rem; border: none; background: #ddd; cursor: pointer; border-radius: 4px; }
+        .tab-btn { padding: 6px 10px; font-size: 0.8rem; border: none; background: #ddd; cursor: pointer; border-radius: 4px; }
         .tab-btn.active { background: #007bff; color: #fff; font-weight: bold; }
 
         /* 画面コンテンツ */
@@ -40,7 +40,8 @@
     </div>
 
     <script>
-        const tagNames = ["タグ1", "タグ2", "タグ3", "タグ4", "タグ5", "タグ6"];
+        // 場所名の定義
+        const tagNames = ["DAWN TO DUSK", "多屋", "小野商店", "萩沢", "浜口駐車場", "円山団地"];
         let today = new Date().toISOString().split('T')[0];
         
         // 画面上の表示保持用データ
@@ -58,15 +59,15 @@
 
         let currentTab = 1;
 
-        // ★ ここにステップ1でコピーしたGASのウェブアプリのURLを貼り付けてください
+        // あなたのGASウェブアプリのURL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwm0-3i2lxNGQEkcuzXc_MJ-soGgCSLGBslvWZjWh-F_O5kwYR8QuTCXfg8247t3k-QmA/exec";
 
         function render() {
-            // タブメニュー描画（6個のタグのみに変更）
+            // タブメニュー描画
             const menu = document.getElementById('tabMenu');
             menu.innerHTML = '';
             for (let i = 1; i <= 6; i++) {
-                menu.innerHTML += `<button class="tab-btn ${currentTab === i ? 'active' : ''}" onclick="switchTab(${i})">タグ${i}</button>`;
+                menu.innerHTML += `<button class="tab-btn ${currentTab === i ? 'active' : ''}" onclick="switchTab(${i})">${tagNames[i-1]}</button>`;
             }
 
             // コンテンツ描画
@@ -105,23 +106,10 @@
             const loadingEl = document.getElementById('loading');
             if (loadingEl) loadingEl.style.display = 'flex';
 
-            // Googleスプレッドシート（GAS）へデータ送信
+            // Googleスプレッドシート（GAS）へGETリクエストで送信
             try {
-                const payload = {
-                    date: attendanceData.date,
-                    tagId: id,
-                    action: action,
-                    timeStr: timeStr
-                };
-
-                await fetch(GAS_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // CORSエラー回避
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload)
-                });
+                const url = `${GAS_URL}?date=${attendanceData.date}&tagId=${id}&action=${action}&timeStr=${timeStr}`;
+                await fetch(url, { method: 'GET' });
 
                 console.log("スプレッドシートへの送信成功");
             } catch (error) {
