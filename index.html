@@ -14,15 +14,17 @@
         .tab-btn.active { background: #007bff; color: #fff; font-weight: bold; }
 
         /* 画面コンテンツ */
-        .content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
+        .content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; position: relative; }
 
         /* ボタンデザイン */
         .action-btn { width: 80%; padding: 15px; font-size: 1.1rem; margin: 10px 0; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; }
         .btn-in { background: #28a745; }
         .btn-out { background: #dc3545; }
-        .btn-csv { background: #17a2b8; width: 80%; padding: 15px; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; }
 
         .status-box { margin: 15px 0; font-size: 1rem; color: #333; line-height: 1.6; }
+        
+        /* ローディング表示 */
+        #loading { display: none; position: absolute; background: rgba(255,255,255,0.8); top:0; left:0; width:100%; height:100%; justify-content:center; align-items:center; font-weight: bold; color: #007bff; }
     </style>
 </head>
 <body>
@@ -33,13 +35,15 @@
     <div class="tab-container" id="tabMenu"></div>
 
     <!-- メインコンテンツ領域 -->
-    <div class="content" id="appContainer"></div>
+    <div class="content" id="appContainer">
+        <div id="loading">送信中...</div>
+    </div>
 
     <script>
         const tagNames = ["タグ1", "タグ2", "タグ3", "タグ4", "タグ5", "タグ6"];
         let today = new Date().toISOString().split('T')[0];
         
-        // データ構造の初期化
+        // 画面上の表示保持用データ
         let attendanceData = {
             date: today,
             tags: {
@@ -54,38 +58,34 @@
 
         let currentTab = 1;
 
+        // ★ ここにステップ1でコピーしたGASのウェブアプリのURLを貼り付けてください
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxayEDFaWMQIorZ7UR4v2OV5mMLoJgz0vj4A3paswoioGNv1R4RfuEM5Orf4Ei7g_3LUA/exec";
+
         function render() {
-            // タブメニュー描画
+            // タブメニュー描画（6個のタグのみに変更）
             const menu = document.getElementById('tabMenu');
             menu.innerHTML = '';
             for (let i = 1; i <= 6; i++) {
                 menu.innerHTML += `<button class="tab-btn ${currentTab === i ? 'active' : ''}" onclick="switchTab(${i})">タグ${i}</button>`;
             }
-            menu.innerHTML += `<button class="tab-btn ${currentTab === 'csv' ? 'active' : ''}" onclick="switchTab('csv')">CSV出力</button>`;
 
             // コンテンツ描画
             const container = document.getElementById('appContainer');
-            container.innerHTML = '';
+            container.innerHTML = `
+                <div id="loading" style="display:none; position:absolute; background:rgba(255,255,255,0.8); top:0; left:0; width:100%; height:100%; justify-content:center; align-items:center; font-weight:bold; color:#007bff;">送信中...</div>
+            `;
 
-            if (typeof currentTab === 'number') {
-                let id = currentTab;
-                container.innerHTML = `
-                    <h3>${tagNames[id-1]} の打刻</h3>
-                    <div class="status-box">
-                        日付: ${attendanceData.date}<br>
-                        入場時刻: <b>${attendanceData.tags[id].in}</b><br>
-                        退場時刻: <b>${attendanceData.tags[id].out}</b>
-                    </div>
-                    <button class="action-btn btn-in" onclick="recordTime(${id}, 'in')">入場打刻</button>
-                    <button class="action-btn btn-out" onclick="recordTime(${id}, 'out')">退場打刻</button>
-                `;
-            } else if (currentTab === 'csv') {
-                container.innerHTML = `
-                    <h3>CSV出力・確認</h3>
-                    <p style="font-size: 0.9rem; color: #666;">本日の記録をCSVファイルとして保存します。</p>
-                    <button class="btn-csv" onclick="exportCSV()">CSVファイルを保存 / 共有</button>
-                `;
-            }
+            let id = currentTab;
+            container.innerHTML += `
+                <h3>${tagNames[id-1]} の打刻</h3>
+                <div class="status-box">
+                    日付: ${attendanceData.date}<br>
+                    入場時刻: <b>${attendanceData.tags[id].in}</b><br>
+                    退場時刻: <b>${attendanceData.tags[id].out}</b>
+                </div>
+                <button class="action-btn btn-in" onclick="recordTime(${id}, 'in')">入場打刻</button>
+                <button class="action-btn btn-out" onclick="recordTime(${id}, 'out')">退場打刻</button>
+            `;
         }
 
         function switchTab(tab) {
@@ -93,33 +93,43 @@
             render();
         }
 
-        function recordTime(id, action) {
+        async function recordTime(id, action) {
             const now = new Date();
             const timeStr = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+            
+            // 画面を即時更新
             attendanceData.tags[id][action] = timeStr;
             render();
-        }
 
-        function exportCSV() {
-            const header = "日付,タグ1の入場時刻,タグ1の退場時刻,タグ2の入場時刻,タグ2の退場時刻,タグ3の入場時刻,タグ3の退場時刻,タグ4の入場時刻,タグ4の退場時刻,タグ5の入場時刻,タグ5の退場時刻,タグ6の入場時刻,タグ6の退場時刻";
-            const row = [
-                attendanceData.date,
-                attendanceData.tags[1].in, attendanceData.tags[1].out,
-                attendanceData.tags[2].in, attendanceData.tags[2].out,
-                attendanceData.tags[3].in, attendanceData.tags[3].out,
-                attendanceData.tags[4].in, attendanceData.tags[4].out,
-                attendanceData.tags[5].in, attendanceData.tags[5].out,
-                attendanceData.tags[6].in, attendanceData.tags[6].out
-            ].join(",");
+            // ローディング表示
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) loadingEl.style.display = 'flex';
 
-            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + header + "\n" + row;
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `attendance_${attendanceData.date}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Googleスプレッドシート（GAS）へデータ送信
+            try {
+                const payload = {
+                    date: attendanceData.date,
+                    tagId: id,
+                    action: action,
+                    timeStr: timeStr
+                };
+
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // CORSエラー回避
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log("スプレッドシートへの送信成功");
+            } catch (error) {
+                console.error("送信エラー:", error);
+                alert("データの送信に失敗しました。通信環境を確認してください。");
+            } finally {
+                if (loadingEl) loadingEl.style.display = 'none';
+            }
         }
 
         render();
