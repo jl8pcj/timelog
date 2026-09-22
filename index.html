@@ -16,12 +16,15 @@
         /* 画面コンテンツ */
         .content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; position: relative; }
 
-        /* ボタンデザイン */
-        .action-btn { width: 80%; padding: 15px; font-size: 1.1rem; margin: 10px 0; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; }
+        /* ボタンデザイン（大きく変更） */
+        .action-btn { width: 92%; max-width: 400px; padding: 24px; font-size: 1.4rem; margin: 12px 0; border: none; border-radius: 12px; cursor: pointer; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
         .btn-in { background: #28a745; }
         .btn-out { background: #dc3545; }
+        
+        /* 無効化されたボタンのデザイン */
+        .action-btn:disabled { background: #cccccc; cursor: not-allowed; box-shadow: none; }
 
-        .status-box { margin: 15px 0; font-size: 1rem; color: #333; line-height: 1.6; }
+        .status-box { margin: 10px 0 20px 0; font-size: 1.1rem; color: #333; line-height: 1.6; }
         
         /* ローディング表示 */
         #loading { display: none; position: absolute; background: rgba(255,255,255,0.8); top:0; left:0; width:100%; height:100%; justify-content:center; align-items:center; font-weight: bold; color: #007bff; }
@@ -29,7 +32,7 @@
 </head>
 <body>
 
-    <h2>TIME　　LOG</h2>
+    <h2>TIME LOG</h2>
 
     <!-- タブ切り替えメニュー -->
     <div class="tab-container" id="tabMenu"></div>
@@ -77,15 +80,26 @@
             `;
 
             let id = currentTab;
+            let inTime = attendanceData.tags[id].in;
+            let outTime = attendanceData.tags[id].out;
+
+            // 既に打刻されているかどうかの判定
+            let isInRecorded = (inTime !== "--:--");
+            let isOutRecorded = (outTime !== "--:--");
+
             container.innerHTML += `
                 <h3>${tagNames[id-1]} の打刻</h3>
                 <div class="status-box">
                     日付: ${attendanceData.date}<br>
-                    入場時刻: <b>${attendanceData.tags[id].in}</b><br>
-                    退場時刻: <b>${attendanceData.tags[id].out}</b>
+                    入場時刻: <b>${inTime}</b><br>
+                    退場時刻: <b>${outTime}</b>
                 </div>
-                <button class="action-btn btn-in" onclick="recordTime(${id}, 'in')">入場打刻</button>
-                <button class="action-btn btn-out" onclick="recordTime(${id}, 'out')">退場打刻</button>
+                <button class="action-btn btn-in" ${isInRecorded ? 'disabled' : ''} onclick="recordTime(${id}, 'in')">
+                    ${isInRecorded ? '入場打刻済み' : '入場打刻'}
+                </button>
+                <button class="action-btn btn-out" ${isOutRecorded ? 'disabled' : ''} onclick="recordTime(${id}, 'out')">
+                    ${isOutRecorded ? '退場打刻済み' : '退場打刻'}
+                </button>
             `;
         }
 
@@ -98,7 +112,7 @@
             const now = new Date();
             const timeStr = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
             
-            // 画面を即時更新
+            // 画面を即時更新（ボタンを無効化状態へ）
             attendanceData.tags[id][action] = timeStr;
             render();
 
