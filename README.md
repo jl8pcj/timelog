@@ -1,2 +1,3 @@
-log ファイル
-https://docs.google.com/spreadsheets/d/1QhSR4h_kRwBhF4YSp8-CrctNxOTXTxH24as8sfzdkCo/edit?gid=0#gid=0
+除雪　log ファイル
+
+https://docs.google.com/spreadsheets/d/11J7PKc-vdHMkt_ZMIvhPgxc59dLR4nRwKKZpbT0Qkpg/edit?gid=0#gid=0
