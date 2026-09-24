@@ -34,6 +34,8 @@
 </head>
 <body>
 
+    <h2>除雪 入退場LOG</h2>
+
     <!-- タブ切り替えメニュー -->
     <div class="tab-container" id="tabMenu"></div>
 
@@ -47,19 +49,31 @@
         const tagNames = ["DAWN TO DUSK", "多屋", "小野商店", "萩沢", "浜口駐車場", "円山団地", "ドッグライフ"];
         let today = new Date().toISOString().split('T')[0];
         
-        // 画面上の表示保持用データ
-        let attendanceData = {
-            date: today,
-            tags: {
-                1: { in: "--:--", out: "--:--" },
-                2: { in: "--:--", out: "--:--" },
-                3: { in: "--:--", out: "--:--" },
-                4: { in: "--:--", out: "--:--" },
-                5: { in: "--:--", out: "--:--" },
-                6: { in: "--:--", out: "--:--" },
-                7: { in: "--:--", out: "--:--" }
+        // ローカルストレージから前回のデータを読み込む（日付が変わっていたらリセット）
+        let savedData = localStorage.getItem('snow_attendance_data');
+        let attendanceData;
+
+        if (savedData) {
+            attendanceData = JSON.parse(savedData);
+            // 日付が変わっていたら本日のデータで初期化
+            if (attendanceData.date !== today) {
+                attendanceData = createInitialData();
             }
-        };
+        } else {
+            attendanceData = createInitialData();
+        }
+
+        function createInitialData() {
+            let newData = {
+                date: today,
+                tags: {}
+            };
+            for (let i = 1; i <= 7; i++) {
+                newData.tags[i] = { in: "--:--", out: "--:--" };
+            }
+            localStorage.setItem('snow_attendance_data', JSON.stringify(newData));
+            return newData;
+        }
 
         let currentTab = 1;
 
@@ -113,8 +127,11 @@
             const now = new Date();
             const timeStr = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
             
-            // 画面を即時更新（ボタンを無効化状態へ）
+            // データを更新してローカルストレージに保存
             attendanceData.tags[id][action] = timeStr;
+            localStorage.setItem('snow_attendance_data', JSON.stringify(attendanceData));
+            
+            // 画面を即時更新（ボタンを無効化状態へ）
             render();
 
             // ローディング表示
